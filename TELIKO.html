@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>IoT and Android Devices on Google Maps</title>
+  <style>
+      #map {
+        height: 100%;
+      }
+      html, body {
+        height: 100%;
+        margin: 0;
+        padding: 0;
+      }
+    </style>
+  <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+  <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAMlDKEexpRrcxxaqsKgQSmaKN0stZozho"></script>
+  <script>
+function initMap() {
+  var map = new google.maps.Map(document.getElementById('map'), {
+    zoom: 15,
+    center: {lat: 37.96839199625242, lng: 23.766515135643527}
+  });
+
+
+<!--THIS IS IN CASE WE RETRIEVE THE DATA FROM A BACKEND PART THAT RUNS AT LOCALHOST-->
+
+<!-- // Make a request to the local server to get the device data-->
+<!--  axios.get('http://localhost:8080/devices')-->
+<!--    .then(function(response) {-->
+<!--      // Process the device data and add markers and circles to the map-->
+<!--      var devices = response.data;-->
+
+<!--BUT NOW WE ARE GONNA DO THIS WITH AN EXAMPLE WITH HARDCODE-->
+
+
+
+
+  var devices = [
+    {
+      type: 'Android',
+      lat: 37.96975620190155,
+      lng: 23.767035191142696,
+      status: 'On'
+    },
+    {
+      type: 'IoT',
+      lat: 37.96945794843255,
+      lng: 23.76841188745668,
+      danger: 'High',
+      status: 'On'
+    },
+    {
+      type: 'IoT',
+      lat: 37.96839199625242,
+      lng: 23.766515135643527,
+      danger: 'High',
+      status: 'Off'
+    }
+  ];
+
+  var iotDeviceCount = 0;
+  var bounds = new google.maps.LatLngBounds();
+  for (var i = 0; i < devices.length; i++) {
+    var device = devices[i];
+    var iconUrl;
+    switch(device.type) {
+      case 'Android':
+        iconUrl = 'https://img.icons8.com/color/48/000000/iphone--v1.png';
+        break;
+      case 'IoT':
+        switch(device.danger) {
+          case 'High':
+            iconUrl = 'http://maps.google.com/mapfiles/ms/icons/red-dot.png';
+            break;
+          case 'Medium':
+            iconUrl = 'http://maps.google.com/mapfiles/ms/icons/orange-dot.png';
+            break;
+          default:
+            iconUrl = 'http://maps.google.com/mapfiles/ms/icons/blue-dot.png';
+        }
+        break;
+    }
+    var marker = new google.maps.Marker({
+      position: {lat: device.lat, lng: device.lng},
+      map: map,
+      icon: iconUrl
+    });
+
+    var infoWindow = new google.maps.InfoWindow({
+      content: '<h3>' + device.type + ' Device ' + (i+1) + '</h3><p>Latitude: ' + device.lat + '</p><p>Longitude: ' + device.lng + '</p>' + (device.danger ? '<p>Danger Level: ' + device.danger + '</p>' : '') + (device.status ? '<p>Status: ' + device.status + '</p>' : '')
+    });
+
+    // Create a new function to handle the click event for each marker
+    function createMarkerClickHandler(infoWindow, marker) {
+      return function() {
+        infoWindow.open(map, marker);
+      };
+    }
+
+    // Pass in the corresponding infoWindow and marker to the click handler function
+    marker.addListener('click', createMarkerClickHandler(infoWindow, marker));
+
+    // If the device is an IoT device, add a circle to show its status
+    if (device.type === 'IoT') {
+      var circleColor = device.status === 'On' ? '#00FF00' : '#FF0000';
+      var circle = new google.maps.Circle({
+        strokeColor: circleColor,
+        strokeOpacity: 0.8,
+        strokeWeight: 2,
+        fillColor: circleColor,
+        fillOpacity: 0.35,
+        map: map,
+        center: {lat: device.lat, lng: device.lng},
+        radius: 50
+      });
+    }
+
+    // If the device is an IoT device with high danger, increase the iotDeviceCount
+    if (device.type === 'IoT' && device.danger === 'High') {
+      iotDeviceCount++;
+
+      // Extend the bounds of the rectangle to include the current device's location
+      bounds.extend(new google.maps.LatLng(device.lat, device.lng));
+    }
+  }
+
+  // If there are two IoT devices with high danger, create a rectangle to show the area
+  if (iotDeviceCount === 2) {
+    var rectangle = new google.maps.Rectangle({
+      bounds: bounds,
+      strokeColor: '#FF0000',
+      strokeOpacity: 0.8,
+      strokeWeight: 2,
+      fillColor: '#FF0000',
+      fillOpacity: 0.35,
+      map: map
+    });
+  }
+}
+
+
+    </script>
+</head>
+<body>
+<div id="map"></div>
+<script async defer
+        src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAMlDKEexpRrcxxaqsKgQSmaKN0stZozho&callback=initMap">
+</script>
+</body>
+</html>
